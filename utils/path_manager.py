@@ -1,8 +1,8 @@
 import pathlib
-import os
 
-def get_absolute_path():
-    return f"{pathlib.Path(__file__).absolute().parent}".split("\\")[:-1][-1]
+def _get_absolute_path():
+    path = f"{pathlib.Path(__file__).absolute().parent}".split("\\")[:-1]
+    return "/".join(path)
 
 def get_storage_path():
-    return f"{get_absolute_path()}/storage/"
+    return f"{_get_absolute_path()}/storage"
