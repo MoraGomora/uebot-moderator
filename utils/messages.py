@@ -19,3 +19,30 @@ def format_message_info(message):
         info.append(f"↩️ Ответ на сообщение ID: <code>{message.reply_to_message.message_id}</code>")
 
     return '\n'.join(info)
+
+def format_user_info(user):
+    info = []
+    info.append(f"👤 <b>Информация о пользователе</b>")
+    info.append(f"🆔 ID: <code>{user.id}</code>")
+    info.append(f"📛 Имя: <b>{user.first_name}</b>")
+
+    if user.last_name:
+        info.append(f"📛 Фамилия: <b>{user.last_name}</b>")
+    
+    if user.username:
+        info.append(f"🔗 Username: @{user.username}")
+    
+    info.append(f"🤖 Бот: {'Да' if user.is_bot else 'Нет'}")
+
+    if getattr(user, "is_premium", False):
+        info.append(f"💎 Premium: Да")
+    if getattr(user, "is_deleted", False):
+        info.append("⚠️ Аккаунт удалён")
+    if getattr(user, "is_scam", False):
+        info.append("🚨 SCAM аккаунт")
+    if getattr(user, "is_fake", False):
+        info.append("🤖 FAKE аккаунт")
+    if getattr(user, "is_restricted", False):
+        info.append("🔒 Ограниченный аккаунт")
+
+    return "\n".join(info)

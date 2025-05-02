@@ -14,4 +14,5 @@ async def register_handlers(client):
     client.add_handler(MessageHandler(flip.flip, filters.command("flip", prefixes=".") & filters.me))
 
     # ----------------- REGISTER PUBLIC COMMANDS -----------------
-    client.add_handler(MessageHandler(group_commands.message_data, filters.command("messageinfo", prefixes=".") & filters.me))
+    client.add_handler(MessageHandler(group_commands.message_data, filters.command("messageinfo", prefixes=".")))
+    client.add_handler(MessageHandler(group_commands.user_info, filters.command("userinfo", prefixes=".")))
