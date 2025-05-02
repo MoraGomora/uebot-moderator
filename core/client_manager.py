@@ -10,19 +10,15 @@ from .handler_manager import register_handlers
 clients = {}
 queues = {}
 
-async def handle_command(session_name, msg, command_func):
-    queue = queues[session_name]
-    await queue.put((msg, command_func))
-
-async def process_queue(session_name):
-    queue = queues[session_name]
-    while True:
-        msg, command_func = await queue.get()
-        try:
-            await command_func(msg)
-        except Exception as e:
-            await msg.reply(f"Ошибка: {e}")
-        queue.task_done()
+# async def process_queue(session_name):
+#     queue = queues[session_name]
+#     while True:
+#         msg, command_func = await queue.get()
+#         try:
+#             await command_func(msg)
+#         except Exception as e:
+#             await msg.reply(f"Ошибка: {e}")
+#         queue.task_done()
 
 async def start_new_session(session_name: str):
     if session_name in clients:
@@ -36,7 +32,7 @@ async def start_new_session(session_name: str):
     clients[session_name] = client
     queues[session_name] = asyncio.Queue()
 
-    asyncio.create_task(process_queue(session_name))
+    # asyncio.create_task(process_queue(session_name))
     await register_handlers(client)
 
 async def stop_all_clients():
