@@ -11,7 +11,7 @@ async def register_handlers(client):
 
     from handlers.public import group_commands
 
-    # ---------------- REGISTER PERSONAL COMMANDS ----------------
+    # ---------------- REGISTER USER COMMANDS ----------------
     client.add_handler(MessageHandler(test.test, filters.command("test", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.PRIVATE)))
     client.add_handler(MessageHandler(type.type, filters.command("type", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.USER)))
     client.add_handler(MessageHandler(flip.flip, filters.command("flip", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.USER)))

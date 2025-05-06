@@ -60,3 +60,8 @@ def check_access_control(access_level: CommandAccessLevel):
                 return False
 
     return filters.create(func)
+
+async def is_admin(_, __, query):
+    print(query.from_user.privileges)
+
+is_admin = filters.create(is_admin)
