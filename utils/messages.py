@@ -46,3 +46,20 @@ def format_user_info(user):
         info.append("🔒 Ограниченный аккаунт")
 
     return "\n".join(info)
+
+def format_user_restriction_info(restricted_user, command_issuer, action_executor, until_date, origin_message=None):
+    info = []
+
+    info.append(f"📛 <b>Ограничение пользователя</b>")
+    info.append(f"👤 Пользователь: {restricted_user.mention} (ID: <code>{restricted_user.id}</code>)")
+    info.append(f"📥 Инициатор команды: {command_issuer.mention} (ID: <code>{command_issuer.id}</code>)")
+    info.append(f"🔧 Исполнитель действия: {action_executor.mention if action_executor else 'Система/бот'} (ID: <code>{action_executor.id if action_executor else 'N/A'}</code>)")
+    info.append(f"📌 Ограничение до: <code>{until_date.strftime('%Y-%m-%d %H:%M:%S') if until_date else "Не указано"}</code>")
+
+    if origin_message:
+        chat_id = origin_message.chat.id
+        msg_id = origin_message.message_id
+        link = f"https://t.me/c/{str(chat_id)[4:]}/{msg_id}" if str(chat_id).startswith("-100") else f"https://t.me/{origin_message.chat.username}/{msg_id}"
+        info.append(f"🔗 <a href=\"{link}\">Перейти к сообщению</a>")
+
+    return '\n'.join(info)
