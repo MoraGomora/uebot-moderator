@@ -1,7 +1,7 @@
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
-from handlers.filters import check_access_control
+from handlers.filters import check_access_control, is_admin
 from enums import CommandAccessLevel
 
 async def register_handlers(client):
@@ -10,6 +10,7 @@ async def register_handlers(client):
     from handlers.personal import flip
 
     from handlers.public import group_commands
+    from handlers.public import channel_commands
 
     # ---------------- REGISTER USER COMMANDS ----------------
     client.add_handler(MessageHandler(test.test, filters.command("test", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.PRIVATE)))
@@ -19,3 +20,4 @@ async def register_handlers(client):
     # ----------------- REGISTER PUBLIC COMMANDS -----------------
     client.add_handler(MessageHandler(group_commands.message_data, filters.command("messageinfo", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC)))
     client.add_handler(MessageHandler(group_commands.user_info, filters.command("userinfo", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC)))
+    client.add_handler(MessageHandler(channel_commands.restrict_process, filters.command("restrict", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_admin))

@@ -1,5 +1,5 @@
 from pyrogram import filters
-from pyrogram.enums import ChatType
+from pyrogram.enums import ChatType, ChatMemberStatus
 
 from enums import CommandAccessLevel
 from config.config import get_owner_id
@@ -12,11 +12,9 @@ def check_access_control(access_level: CommandAccessLevel):
 
         if getattr(query.from_user, "is_bot", False):
             return False
-        if getattr(query, "forward_from", None):
-            if getattr(query.forward_from, "is_bot", False):
-                return False
-            
+        if getattr(getattr(query, "forward_from", None), "is_bot", False):
             return False
+            
         if query.chat.type in [ChatType.CHANNEL, ChatType.BOT]:
             return False
 
@@ -61,7 +59,19 @@ def check_access_control(access_level: CommandAccessLevel):
 
     return filters.create(func)
 
-async def is_admin(_, __, query):
-    print(query.from_user.privileges)
+async def is_admin(_, client, query):
+    try:
+        if query.chat.id == query.from_user.id:
+            return False
+        
+        user = await client.get_chat_member(query.chat.id, query.from_user.id)
+
+        if user.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+            return True
+    except Exception as e:
+        await client.send_message(query.chat.id, f"Something was happened: {e}")
+        return False
+    
+    print(user)
 
 is_admin = filters.create(is_admin)
