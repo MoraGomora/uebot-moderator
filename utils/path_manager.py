@@ -16,5 +16,13 @@ def get_session_path():
 
     return path
 
+def get_plugin_path():
+    path = f"{_get_absolute_path()}/plugins"
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    return path
+
 def is_file_in_storage_available(filename: str) -> bool:
     return False if not os.path.exists(f"{get_storage_path()}/{filename}") else True
