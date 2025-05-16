@@ -10,9 +10,9 @@ class JSONManager:
     def __init__(self, filename: str):
         self._filename = filename
         self._file_format = ".json"
-        self.filepath = f"{get_storage_path()}/{self._filename + self._file_format}"
         self._raw_data = None
         self._error = None
+        self.filepath = f"{get_storage_path()}/{self._filename + self._file_format}"
 
     async def read(self) -> dict | None: # type: ignore
         if not os.path.exists(self.filepath):
