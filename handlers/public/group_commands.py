@@ -4,6 +4,7 @@ from pyrogram.errors import UserNotMutualContact
 
 from utils.messages import format_message_info, format_user_info, format_user_restriction_info
 
+
 async def restrict(client, msg) -> bool:
     try:
         reply_msg = getattr(msg, "reply_to_message", None)
@@ -18,6 +19,7 @@ async def restrict(client, msg) -> bool:
         return True
     except Exception as e:
         await client.send_message(msg.chat.id, f"Something was happened: {e}")
+
 
 async def unrestrict(client, msg):
     try:
@@ -43,6 +45,7 @@ async def unrestrict(client, msg):
     except Exception as e:
         await client.send_message(msg.chat.id, f"Something was happened: {e}")
 
+
 async def is_user_restricted(client, msg) -> bool:
     try:
         reply_msg = getattr(msg, "reply_to_message", None)
@@ -51,6 +54,7 @@ async def is_user_restricted(client, msg) -> bool:
         return True if user.status == ChatMemberStatus.RESTRICTED else False
     except Exception as e:
         await client.send_message(msg.chat.id, f"Something was happened: {e}")
+
 
 async def get_restricted_data(client, msg):
     try:
@@ -79,12 +83,14 @@ async def get_restricted_data(client, msg):
     except Exception as e:
         await client.send_message(msg.chat.id, f"Something was happened: {e}")
 
+
 async def delete_message(client, msg):
     try:
         reply_msg = getattr(msg, "reply_to_message", None)
         await client.delete_messages(msg.chat.id, reply_msg.id) # this function return a number of deleted messages
     except Exception as e:
         await client.send_message(msg.chat.id, f"Something was happened: {e}")
+
 
 async def restrict_process(client, msg):
     reply_msg = getattr(msg, "reply_to_message", None)
@@ -141,11 +147,13 @@ async def message_data(client, msg):
     except Exception as e:
         print(f"Something was happened: {e}")
 
+
 def find_photo_by_unique_id(photos, target_unique_id: str):
     for photo in photos:
         if photo.file_unique_id == target_unique_id:
             return photo
     return None
+
 
 async def user_info(client, msg):
     reply_message = getattr(msg, "reply_to_message", None)
