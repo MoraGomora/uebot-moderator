@@ -20,3 +20,4 @@ async def register_handlers(client):
     client.add_handler(MessageHandler(group_commands.message_data, filters.command("messageinfo", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC)))
     client.add_handler(MessageHandler(group_commands.user_info, filters.command("userinfo", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC)))
     client.add_handler(MessageHandler(group_commands.restrict_process, filters.command("restrict", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_admin))
+    client.add_handler(MessageHandler(group_commands.unrestrict_process, filters.command("unrestrict", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_admin))

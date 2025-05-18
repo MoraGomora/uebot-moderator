@@ -105,6 +105,30 @@ async def restrict_process(client, msg):
         if is_restrict:
             await delete_message(client, msg)
             await client.send_message(msg.chat.id, message)
+        else:
+            await client.send_message(msg.chat.id, f"Пользователь {get_user_data.first_name} уже ограничен")
+
+
+async def unrestrict_process(client, msg):
+    reply_msg = getattr(msg, "reply_to_message", None)
+    is_restricted = await is_user_restricted(client, msg)
+
+    if reply_msg is None:
+        await client.send_message(msg.chat.id, "Чтобы команда сработала, необходимо выбрать любое сообщение пользователя, которого вы хотите ограничить")
+        return
+    if reply_msg.from_user.id == msg.from_user.id:
+        await client.send_message(msg.chat.id, "ОГРАНИЧЕНИЕ: Ты не можешь ограничить сам себя.")
+        return
+    
+    if is_restricted:
+        is_unrestrict = await unrestrict(client, msg)
+        get_user_data, _ = await get_restricted_data(client, msg)
+
+        if is_unrestrict:
+            await client.send_message(msg.chat.id, f"С пользователя {get_user_data.first_name} сняты все ограничения")
+        else:
+            await client.send_message(msg.chat.id, f"Пользователь {get_user_data.first_name} не имеет никаких ограничений в этой группе")
+
 
 async def message_data(client, msg):
     try:
