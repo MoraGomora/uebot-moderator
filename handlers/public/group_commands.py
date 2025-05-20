@@ -2,7 +2,7 @@ from pyrogram.types import ChatPermissions
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.errors import UserNotMutualContact
 
-from utils.messages import format_message_info, format_user_info, format_user_restriction_info
+from utils.messages import *
 
 
 async def restrict(client, msg) -> bool:
