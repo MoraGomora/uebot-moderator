@@ -158,7 +158,16 @@ class PluginCommandRegister(PluginLog):
     # --------------- Private Methods ---------------
     def _register_handler(self, name: str, handler: callable, handler_type: Any, command_wrapper: Any, filter: Optional[filters.Filter] = None, group: int = 0):
         if not callable(handler):
+            self.log("error", f"Command function {handler} is not callable.")
             raise ValueError(f"Command function {handler} is not callable.")
+        
+        if name in _handlers:
+            self.log("error", f"Command {name} is already registered.")
+            raise ValueError(f"Command {name} is already registered.")
+        
+        if name is "":
+            self.log("error", "Command name cannot be an empty string.")
+            raise ValueError("Command name cannot be an empty string.")
         
         _commands[name] = handler
         command_filter = filter if filter else filters.command(name)
