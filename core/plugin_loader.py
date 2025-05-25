@@ -24,9 +24,8 @@ class PluginLoader(PluginLog):
 
         self._functions = []
 
-    def inspect_module(self, folder_name: str, module):
+    def inspect_module(self, folder_name: str, module, data: dict):
         required_methods = ["start", "load"]
-        plugin_name = _plugins.get(folder_name, None)
 
         for name, obj in inspect.getmembers(module, inspect.isfunction):
             if obj.__module__ == module.__name__:
@@ -43,12 +42,12 @@ class PluginLoader(PluginLog):
 
 
                         self.log("debug", f"Function {name = } in the plugin doesn't have any arguments")
-                        self._call_with_captured_print(plugin_name, name) or self._call_and_capture_return(plugin_name, name)
+                        self._call_with_captured_print(data, name)
                     else:
                         self.log("error", f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
                         raise TypeError(f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
                 
-                self._functions.append({"name": name, "obj": obj, "params": [p.name for p in params] if params else None})
+                self._functions.append({folder_name: {"name": name, "obj": obj, "params": [p.name for p in params] if params else None}})
 
     def load_plugin(self):
         for folder_name in os.listdir(self._plugin_path):
@@ -64,11 +63,17 @@ class PluginLoader(PluginLog):
             data = self.plugin_metadata.get_metadata(folder_name)
             module = self.plugin.load_module_from_file(plugin_contains, folder_name, files, data)
 
-            _plugins[folder_name] = data
-            _plugins[folder_name]["functions"] = self._functions
-
             if module:
-                self.inspect_module(folder_name, module)
+                self.inspect_module(folder_name, module, data)
+            
+            _plugins: dict = {
+                folder_name: data,
+                "functions": [func for func in self._functions if folder_name in func]
+            }
+
+            # _plugins[folder_name] = data
+            # _plugins[folder_name]["functions"] = self._functions
+
 
                 
     def unload_plugin(self, plugin_name: str):
