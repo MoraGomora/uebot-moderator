@@ -1,3 +1,5 @@
+from .register import PluginCommandRegister
+
 class PluginBase:
     """
     Base class for all plugins.
@@ -10,5 +12,5 @@ class PluginBase:
     def load(self):
         raise NotImplementedError("Subclasses should implement this method.")
     
-    def register(self, name: str, func):
+    def register(self, command: PluginCommandRegister):
         raise NotImplementedError("Subclasses should implement this method.")
