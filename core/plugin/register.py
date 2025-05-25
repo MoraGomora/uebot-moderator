@@ -165,7 +165,7 @@ class PluginCommandRegister(PluginLog):
             self.log("error", f"Command {name} is already registered.")
             raise ValueError(f"Command {name} is already registered.")
         
-        if name is "":
+        if name == "":
             self.log("error", "Command name cannot be an empty string.")
             raise ValueError("Command name cannot be an empty string.")
         
