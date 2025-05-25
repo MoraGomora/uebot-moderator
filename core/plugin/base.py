@@ -1,6 +1,7 @@
 from .register import PluginCommandRegister
+from .log import PluginLog
 
-class PluginBase:
+class PluginBase(PluginLog):
     """
     Base class for all plugins.
     This class provides a common interface for loading, managing plugins and register commands.

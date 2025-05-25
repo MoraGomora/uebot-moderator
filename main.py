@@ -13,7 +13,7 @@ log.write_logs_to_file()
 async def main():
     log.getLogger().info("Loading plugins...")
     loader = PluginLoader()
-    loader.load_plugin()
+    await loader.load_plugin()
 
     log.getLogger().info("Starting Userbot Moderator...")
     await start_new_session("test1")

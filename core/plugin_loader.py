@@ -6,8 +6,10 @@ import sys
 from utils import path_manager
 
 from .plugin.log import PluginLog
+from .plugin.base import PluginBase
 from .plugin._metadata import _PluginMetadata
 from .plugin._plugin import _Plugin
+from .plugin._execution_manager import PluginExecutionManager
 
 loaded_plugins = {}
 _plugins = {}
@@ -21,35 +23,44 @@ class PluginLoader(PluginLog):
         self._plugin_path = path_manager.get_plugin_path()
         self.plugin_metadata = _PluginMetadata()
         self.plugin = _Plugin()
+        self.execution_manager = PluginExecutionManager()
 
         self._functions = []
 
     def inspect_module(self, folder_name: str, module, data: dict):
         required_methods = ["start", "load"]
 
-        for name, obj in inspect.getmembers(module, inspect.isfunction):
-            if obj.__module__ == module.__name__:
-                self.log("debug", f"{name = }, {obj = }")
+        for class_name, cls in inspect.getmembers(module, inspect.isclass):
+            if (cls.__module__ == module.__name__ and
+                issubclass(cls, PluginBase) and
+                cls is not PluginBase):
+                self.log("debug", f"{class_name = }, {cls = }")
 
-                sig = inspect.signature(obj)
-                params = list(sig.parameters.values())
-                params = [p for p in params if p.name != "self"]
+                for name, obj in inspect.getmembers(cls, inspect.isfunction):
+                    if obj.__module__ == module.__name__:
+                        plugin_instance = cls()
+                        # print(f"{name = }, {obj = }")
+                        self.log("debug", f"{name = }, {obj = }")
 
-                if name in required_methods:
-                    if not params:
-                        self.log("debug", f"Function {name = } in the plugin is a required method")
-                        self.plugin.entry_load(obj(), name)
+                        sig = inspect.signature(obj)
+                        params = list(sig.parameters.values())
+                        params = [p for p in params if p.name != "self"]
 
+                        if name in required_methods:
+                            if not params:
+                                self.log("debug", f"Function {name = } in the plugin is a required method")
+                                # self.plugin.entry_load(obj(), name)
+                                self.execution_manager.add_method(plugin_instance, name)
 
-                        self.log("debug", f"Function {name = } in the plugin doesn't have any arguments")
-                        self._call_with_captured_print(data, name)
-                    else:
-                        self.log("error", f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
-                        raise TypeError(f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
+                                self.log("debug", f"Function {name = } in the plugin doesn't have any arguments")
+                                self._call_with_captured_print(data, name)
+                            else:
+                                self.log("error", f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
+                                raise TypeError(f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
                 
                 self._functions.append({folder_name: {"name": name, "obj": obj, "params": [p.name for p in params] if params else None}})
 
-    def load_plugin(self):
+    async def load_plugin(self):
         for folder_name in os.listdir(self._plugin_path):
             plugin_contains = os.path.join(self._plugin_path, folder_name)
 
@@ -70,6 +81,8 @@ class PluginLoader(PluginLog):
                 folder_name: data,
                 "functions": [func for func in self._functions if folder_name in func]
             }
+
+        self.execution_manager.execute_all()
 
             # _plugins[folder_name] = data
             # _plugins[folder_name]["functions"] = self._functions
