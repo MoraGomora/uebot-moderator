@@ -11,6 +11,13 @@ async def register_handlers(client):
 
     from handlers.public import group_commands
 
+    from .plugin._initializer import _PluginCommandInializer
+
+    # ---------------- Initialize the command register ----------------
+    command_register = _PluginCommandInializer()
+    # ----------------- Register all handlers -----------------
+    command_register._register_handlers(client)
+
     # ---------------- REGISTER USER COMMANDS ----------------
     client.add_handler(MessageHandler(test.test, filters.command("test", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.PRIVATE)))
     client.add_handler(MessageHandler(type.type, filters.command("type", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.USER)))

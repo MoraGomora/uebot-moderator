@@ -72,16 +72,16 @@ class PluginLog:
         else:
             raise ValueError("[LOADER] Invalid log level. Choose from: debug, info, warning, error, critical")
 
-    def _call_with_captured_print(self, name: str, module, method_name, *args, **kwargs):
+    def _call_with_captured_print(self, plugin_data: dict, method_name, *args, **kwargs):
         old_stdout = sys.stdout
-        sys.stdout = _PluginStdout(name, self.log)
+        sys.stdout = _PluginStdout(plugin_data.get("name"), self.log)
         try:
-            result = getattr(module, method_name)(*args, **kwargs)
+            result = getattr(plugin_data.get("module"), method_name)(*args, **kwargs)
         finally:
             sys.stdout = old_stdout
         return result
 
-    def _call_and_capture_return(self, plugin, method_name, *args, **kwargs):
-        result = getattr(plugin, method_name)(*args, **kwargs)
-        self.log("debug", f"The plugin {plugin.__name__} return: {result}")
+    def _call_and_capture_return(self, plugin_data: dict, method_name: str, *args, **kwargs):
+        result = getattr(plugin_data.get("module"), method_name)(*args, **kwargs)
+        self.log("debug", f"The plugin {plugin_data.get("name")} return: {result}")
         return result

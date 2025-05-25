@@ -45,8 +45,8 @@ class _Plugin(PluginLog):
             self.log("error", f"❌ main.py file was not found in plugin {metadata["name"]} (version: {metadata["version"]}). " \
                 "The plugin will not be loaded")
 
-    def entry_load(self, plugin_name, entry_function: str):
-        entry_func = getattr(plugin_name, entry_function, None)
+    def entry_load(self, module, entry_function: str):
+        entry_func = getattr(module, entry_function, None)
 
         if callable(entry_func):
             if inspect.iscoroutinefunction(entry_func):

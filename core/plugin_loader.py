@@ -22,29 +22,33 @@ class PluginLoader(PluginLog):
         self.plugin_metadata = _PluginMetadata()
         self.plugin = _Plugin()
 
+        self._functions = []
+
     def inspect_module(self, folder_name: str, module):
-        required_methods = ["start", "load", "register"]
+        required_methods = ["start", "load"]
         plugin_name = _plugins.get(folder_name, None)
 
         for name, obj in inspect.getmembers(module, inspect.isfunction):
-            self.log("debug", f"{name = }, {obj = }")
+            if obj.__module__ == module.__name__:
+                self.log("debug", f"{name = }, {obj = }")
 
-            sig = inspect.signature(obj)
-            params = list(sig.parameters.values())
-            params = [p for p in params if p.name != "self"]
+                sig = inspect.signature(obj)
+                params = list(sig.parameters.values())
+                params = [p for p in params if p.name != "self"]
 
-            if not params:
-                if all(hasattr(obj(), method) for method in required_methods):
-                    plugin_instance = obj()
-                    plugin_instance.start()
+                if name in required_methods:
+                    if not params:
+                        self.log("debug", f"Function {name = } in the plugin is a required method")
+                        self.plugin.entry_load(obj(), name)
 
-                self.log("debug", f"Function {name = } in the plugin doesn't have any arguments")
-                # return self._call_with_captured_print(plugin_name["name"], name)
-                self._call_with_captured_print(plugin_name["name"], module, name)
-            else:
-                self.log("error", f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
-                raise TypeError(f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
 
+                        self.log("debug", f"Function {name = } in the plugin doesn't have any arguments")
+                        self._call_with_captured_print(plugin_name, name) or self._call_and_capture_return(plugin_name, name)
+                    else:
+                        self.log("error", f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
+                        raise TypeError(f"Function {name = } in the plugin has arguments: {[p.name for p in params]}! This is not allowed!")
+                
+                self._functions.append({"name": name, "obj": obj, "params": [p.name for p in params] if params else None})
 
     def load_plugin(self):
         for folder_name in os.listdir(self._plugin_path):
@@ -61,9 +65,10 @@ class PluginLoader(PluginLog):
             module = self.plugin.load_module_from_file(plugin_contains, folder_name, files, data)
 
             _plugins[folder_name] = data
+            _plugins[folder_name]["functions"] = self._functions
 
-            # if module:
-            #     self.inspect_module(folder_name, module)
+            if module:
+                self.inspect_module(folder_name, module)
 
                 
     def unload_plugin(self, plugin_name: str):
@@ -95,8 +100,11 @@ class PluginLoader(PluginLog):
             except Exception as e:
                 print(e)
 
-    def get_error(self):
-        return self._error
+    def get_all_plugins(self):
+        return _plugins
+    
+    def get_plugin(self, plugin_name: str):
+        return _plugins.get(plugin_name, None)
     
 
 
