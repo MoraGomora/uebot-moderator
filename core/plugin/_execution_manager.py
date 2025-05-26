@@ -29,4 +29,4 @@ class PluginExecutionManager(PluginLog):
                 else:
                     method()
             except Exception as e:
-                print(f"Error executing {method_name}: {e}")
+                self.log("error", f"Error executing {method_name} in {instance.__class__.__name__}: {e}")
