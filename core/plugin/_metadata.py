@@ -76,12 +76,6 @@ class _PluginMetadata(PluginLog):
                     "entry_point_main": self._entry_point_main
                 }
             }
-        #     # Write standard data to self.self._metadata
-        #     self._metadata[folder_name]["name"] = folder_name
-        #     self._metadata[folder_name]["version"] = self._version
-
-        #     self.log("warning", f"⚠️ {self._metadata_filename} is missing in the plugin {self._metadata[folder_name]["name"]}. " \
-        #         f"Standard data was written to self._metadata: {self._metadata[folder_name]}")
 
     def get_metadata(self, folder_name: str) -> dict:
         """
