@@ -69,6 +69,7 @@ class ModerationActions:
 
             return True
         except Exception as e:
+            _log.getLogger().error(f"Something was happened: {e}")
             await self.client.send_message(chat_id, f"Something was happened: {e}")
 
     async def _ban_user(self, chat_id, user_id) -> bool:
