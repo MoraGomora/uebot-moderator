@@ -67,7 +67,7 @@ class DBManager:
     async def update_many_data(self, filter: dict, data: dict | list, upsert: bool = False) -> list[ObjectId] | None:
         try:
             _log.getLogger().debug(f"Updating the data '{data}' in the '{self.collection.name}' collection with filter '{filter}'...")
-            result = await self.collection.update_many(filter, data, upsert)
+            result = await self.collection.update_many(filter, {"$set": data}, upsert)
 
             if result is None:
                 _log.getLogger().error(f"The '{data}' data was not written to the '{self.collection.name}' collection")
@@ -79,10 +79,10 @@ class DBManager:
             _log.getLogger().error(f"Something was happened in db_manager.insert_many_data(): {e}")
             print(e)
 
-    async def find_data_in_collection_by(self, find_by: dict) -> dict:
+    async def find_data_in_collection_by(self, find_by: dict) -> list:
         try:
             _log.getLogger().debug(f"Find data in the '{self.collection.name}' collection by '{find_by}'")
-            data = await self.collection.find_one(find_by)
+            data = [d async for d in self.collection.find(find_by)]
 
             if data is None:
                 _log.getLogger().error(f"No data in this collection by '{find_by}'")
