@@ -4,10 +4,10 @@ import io
 
 from typing import Literal
 
-from logger import Log
+from logger import Log, STANDARD_LOG_LEVEL
 
 _log = Log("loader")
-_log.getLogger().setLevel("DEBUG")
+_log.getLogger().setLevel(STANDARD_LOG_LEVEL)
 _log.write_logs_to_file()
 
 class _PluginStdout(io.StringIO):
