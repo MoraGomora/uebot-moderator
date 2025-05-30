@@ -3,13 +3,17 @@ from pyrogram.enums import ChatType, ChatMemberStatus
 
 from enums import CommandAccessLevel
 from config.config import get_owner_id
-from logger import Log
+from logger import Log, STANDARD_LOG_LEVEL
+
+from core.db_manager import DBManager
 
 DEVS = []
 
-log = Log("handlers.filters")
-log.getLogger().setLevel("DEBUG")
+log = Log("Filters")
+log.getLogger().setLevel(STANDARD_LOG_LEVEL)
 log.write_logs_to_file()
+
+db = DBManager("moderator-db", "allowed-chats")
 
 def check_access_control(access_level: CommandAccessLevel):
     async def func(_, client, query):
@@ -90,4 +94,26 @@ async def is_admin(_, client, query):
     
     print(user)
 
+async def is_chat_allowed(_, client, query):
+    try:
+        data = await db.find_data_in_collection_by({"chat_id": query.chat.id})
+        chat = await client.get_chat(query.chat.id)
+
+        if not data:
+            log.getLogger().debug("Chat is not allowed")
+            return False
+
+        if chat.type in [ChatType.SUPERGROUP, ChatType.GROUP]:
+            log.getLogger().debug("Chat type is supergroup or group")
+            return True
+        
+        if query.chat.id == query.from_user.id:
+            log.getLogger().debug("Chat ID is equal to user ID")
+            return False
+    except Exception as e:
+        log.getLogger().debug(f"Error in is_chat_allowed: {e}")
+        await client.send_message(query.chat.id, f"Something was happened: {e}")
+        return False
+
 is_admin = filters.create(is_admin)
+is_chat_allowed = filters.create(is_chat_allowed)
