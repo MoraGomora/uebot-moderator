@@ -55,7 +55,7 @@ class AIManager:
 
             response = await self._client.chat.completions.create(
                 model=model,
-                messages=self.messages[-1],
+                messages=self.messages,
                 temperature=0.7,
                 stream=False,
                 max_completion_tokens=200
