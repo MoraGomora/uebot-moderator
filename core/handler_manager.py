@@ -11,6 +11,9 @@ async def register_handlers(client):
 
     from handlers.public import group_commands
 
+    from handlers.admin.group import access
+    from handlers.admin.group import blocked_users
+
     from .plugin._initializer import _PluginCommandInializer
 
     # ---------------- Initialize the command register ----------------
@@ -23,10 +26,13 @@ async def register_handlers(client):
     client.add_handler(MessageHandler(type.type, filters.command("type", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.USER)))
     client.add_handler(MessageHandler(flip.flip, filters.command("flip", prefixes=".") & filters.me & check_access_control(CommandAccessLevel.USER)))
 
-    # ----------------- REGISTER PUBLIC COMMANDS -----------------
+    # ----------------- REGISTER GROUP COMMANDS -----------------
     client.add_handler(MessageHandler(group_commands.message_data, filters.command("messageinfo", prefixes=".") & is_chat_allowed & check_access_control(CommandAccessLevel.PUBLIC)))
     client.add_handler(MessageHandler(group_commands.user_info, filters.command("userinfo", prefixes=".") & is_chat_allowed & check_access_control(CommandAccessLevel.PUBLIC)))
-    client.add_handler(MessageHandler(group_commands.tester, is_chat_allowed))
-    client.add_handler(MessageHandler(group_commands.set_chat_allowed, filters.command("allow", prefixes=".") & check_access_control(CommandAccessLevel.PRIVATE) & is_admin))
+
+    # ----------------- REGISTER ADMIN COMMANDS -----------------
+    client.add_handler(MessageHandler(access.allow_chat, filters.command("allow", prefixes=".") & check_access_control(CommandAccessLevel.PRIVATE) & is_admin))
+    client.add_handler(MessageHandler(access.disallow_chat, filters.command("disallow", prefixes=".") & check_access_control(CommandAccessLevel.PRIVATE) & is_admin))
+    client.add_handler(MessageHandler(blocked_users.get_blocked_users, filters.command("get_blocked", prefixes=".") & check_access_control(CommandAccessLevel.PRIVATE) & is_admin))
     # client.add_handler(MessageHandler(group_commands.restrict_process, check_access_control(CommandAccessLevel.PUBLIC) & is_admin))
     # client.add_handler(MessageHandler(group_commands.unrestrict_process, filters.command("unrestrict", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_admin))
