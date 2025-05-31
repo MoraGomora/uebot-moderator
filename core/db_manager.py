@@ -79,6 +79,21 @@ class DBManager:
             _log.getLogger().error(f"Something was happened in db_manager.insert_many_data(): {e}")
             print(e)
 
+    async def delete_one_data(self, filter: dict) -> bool:
+        try:
+            _log.getLogger().debug(f"Deleting the data by filter '{filter}' in the '{self.collection.name}' collection...")
+            result = await self.collection.delete_one(filter)
+
+            if result.deleted_count == 0:
+                _log.getLogger().error(f"No data found to delete with filter '{filter}'")
+                return False
+            
+            _log.getLogger().debug(f"Data deleted successfully")
+            return True
+        except Exception as e:
+            _log.getLogger().error(f"Something was happened in db_manager.delete_one_data(): {e}")
+            print(e)
+
     async def find_data_in_collection_by(self, find_by: dict) -> list:
         try:
             _log.getLogger().debug(f"Find data in the '{self.collection.name}' collection by '{find_by}'")
