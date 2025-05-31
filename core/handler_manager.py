@@ -5,9 +5,9 @@ from handlers.filters import check_access_control, is_admin, is_chat_allowed
 from enums import CommandAccessLevel
 
 async def register_handlers(client):
-    from handlers.personal import test
-    from handlers.personal import type
-    from handlers.personal import flip
+    from handlers.user import test
+    from handlers.user import type
+    from handlers.user import flip
 
     from handlers.public import group_commands
 
