@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from pyrogram import Client
 from pyrogram.types import ChatPermissions
 
+from .group import restrict, ban, message
+
 from logger import Log
 
 _log = Log("ModerationActions")
@@ -44,7 +46,7 @@ class ModerationActions:
                 until_date = None
                 if decision.duration:
                     until_date = datetime.now() + timedelta(seconds=decision.duration)
-                return await self._restrict(chat_id, user_id, until_date)
+                return await restrict.restrict(chat_id, user_id, until_date)
 
             if decision.action == ModAction.BAN:
                 return await self._ban_user(chat_id, user_id)
