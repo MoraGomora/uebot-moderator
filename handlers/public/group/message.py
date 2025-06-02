@@ -27,3 +27,28 @@ async def delete_message(client, msg):
     except Exception as e:
         _log.getLogger().error(f"Something went wrong while deleting message: {e}")
         await client.send_message(msg.chat.id, f"Something was happened: {e}")
+
+class MessageActions:
+
+    def __init__(self, client):
+        """Initialize the MessageActions class with a client instance.
+        :param client: The client instance to interact with the Telegram API.
+        """
+        self.client = client
+
+    async def delete_message(self, chat_id, user_id) -> bool:
+        try:
+            user_messages = await self.client.get_chat_history(chat_id, from_user_id=user_id)
+            _log.getLogger().debug(f"Found {len(user_messages)} messages from user: {user_id} in chat: {chat_id}")
+
+            if not user_messages:
+                return False
+            
+            for message in user_messages:
+                _log.getLogger().debug(f"Deleting message: {message.id} from user: {user_id}")
+                await self.client.delete_messages(chat_id, message.id)
+
+            _log.getLogger().debug(f"All messages from user: {user_id} in chat: {chat_id} have been deleted")
+            return True
+        except Exception as e:
+            await self.client.send_message(chat_id, f"Something was happened: {e}")
