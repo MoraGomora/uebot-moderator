@@ -13,7 +13,7 @@ db = DBManager("moderator-db", "banned-users")
 async def get_blocked_users(client, msg):
     banned_data = BannedData()
 
-    datas = [member async for member in client.get_chat_members(msg.chat.id, filter=ChatMembersFilter.BANNED, limit=40)]
+    datas = [member async for member in client.get_chat_members(msg.chat.id, filter=ChatMembersFilter.BANNED)]
     users = []
 
     db_data = await db.find_data_in_collection_by({"chat_id": msg.chat.id})
