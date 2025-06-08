@@ -13,6 +13,9 @@ class RestrictActions:
 
     async def restrict(self, chat_id, user_id, date) -> bool:
         try:
+            if not isinstance(chat_id, int) or not isinstance(user_id, int):
+                raise TypeError("chat_id and user_id must be integers")
+            
             _log.getLogger().debug(f"Restricting user {user_id} in chat {chat_id}")
             data = await self.client.restrict_chat_member(chat_id, user_id, ChatPermissions(), date)
 
