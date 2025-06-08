@@ -21,6 +21,17 @@ class DBManager:
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
 
+    async def create_collection(self, collection_name: str) -> bool:
+        try:
+            _log.getLogger().debug(f"Creating collection '{collection_name}' in the database '{self.db.name}'...")
+            await self.db.create_collection(collection_name)
+            _log.getLogger().debug(f"Collection '{collection_name}' created successfully!")
+            return True
+        except Exception as e:
+            _log.getLogger().error(f"Something was happened in db_manager.create_collection(): {e}")
+            print(e)
+            return False
+
     async def insert_one_data(self, data: dict) -> ObjectId | None:
         try:
             _log.getLogger().debug(f"Inserting the data '{data}' in the '{self.collection.name}' collection...")
