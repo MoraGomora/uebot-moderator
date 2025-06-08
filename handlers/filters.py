@@ -13,8 +13,6 @@ log = Log("Filters")
 log.getLogger().setLevel(STANDARD_LOG_LEVEL)
 log.write_logs_to_file()
 
-db = DBManager("moderator-db", "allowed-chats")
-
 def check_access_control(access_level: CommandAccessLevel):
     async def func(_, client, query):
         owner_id = int(get_owner_id())
@@ -91,10 +89,10 @@ async def is_admin(_, client, query):
         log.getLogger().debug(f"Error in is_admin: {e}")
         await client.send_message(query.chat.id, f"Something was happened: {e}")
         return False
-    
-    print(user)
 
 async def is_chat_allowed(_, client, query):
+    db = DBManager("moderator-db", "allowed-chats")
+
     try:
         data = await db.find_data_in_collection_by({"chat_id": query.chat.id})
         chat = await client.get_chat(query.chat.id)
@@ -114,6 +112,30 @@ async def is_chat_allowed(_, client, query):
         log.getLogger().debug(f"Error in is_chat_allowed: {e}")
         await client.send_message(query.chat.id, f"Something was happened: {e}")
         return False
+    
+async def is_user_trusted(_, client, query):
+    db = DBManager("moderator-db", "trusted-users")
+
+    try:
+        reply_msg = getattr(query, "reply_to_message", None)
+        if reply_msg is None or not reply_msg.from_user:
+            log.getLogger().debug("Reply message is None or does not have from_user")
+            return False
+        
+        user_id = reply_msg.from_user.id
+        data = await db.find_data_in_collection_by({"chat_id": query.chat.id, "user_id": user_id})
+
+        if not data:
+            log.getLogger().debug(f"User {user_id} is not trusted in chat {query.chat.id}.")
+            return False
+        
+        log.getLogger().debug(f"User {user_id} is trusted in chat {query.chat.id}.")
+        return True
+    except Exception as e:
+        log.getLogger().debug(f"Error in is_user_trusted: {e}")
+        await client.send_message(query.chat.id, f"Something was happened: {e}")
+        return False
 
 is_admin = filters.create(is_admin)
 is_chat_allowed = filters.create(is_chat_allowed)
+is_user_trusted = filters.create(is_user_trusted)
