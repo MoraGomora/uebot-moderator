@@ -60,6 +60,7 @@ class TrustedUsers:
                 return
             
             user_id = reply_msg.from_user.id
+            nickname = reply_msg.from_user.first_name or "Нет имени"
             data = await db.find_data_in_collection_by({"chat_id": msg.chat.id, "user_id": user_id})
             
             if not data:
@@ -68,8 +69,8 @@ class TrustedUsers:
             
             result = await db.delete_one_data({"chat_id": msg.chat.id, "user_id": user_id})
             if result:
-                _log.getLogger().debug(f"User {user_id} removed from trusted users in chat {msg.chat.id}.")
-                await self.client.send_message(msg.chat.id, f"Пользователь {user_id} успешно удален из доверенных пользователей.")
+                _log.getLogger().debug(f"User {nickname} ({user_id}) removed from trusted users in chat {msg.chat.id}.")
+                await self.client.send_message(msg.chat.id, f"Пользователь {nickname} успешно удален из доверенных пользователей.")
         except Exception as e:
             await self.client.send_message(msg.chat.id, f"Что-то пошло не так: {e}")
 
