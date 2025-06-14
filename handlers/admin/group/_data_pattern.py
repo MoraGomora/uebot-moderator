@@ -126,6 +126,7 @@ class AllowChat:
             "username": username,
             "chat_type": chat_type,
             "is_scam": is_scam,
+            "automoderation": False,  # Default value, can be changed later
             "has_protected_content": has_protected_content,
             "created_at": created_at
         }
