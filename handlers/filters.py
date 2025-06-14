@@ -7,6 +7,8 @@ from logger import Log, STANDARD_LOG_LEVEL
 
 from core.db_manager import DBManager
 
+from handlers.admin.group.automoderation import AutoModerationHandler
+
 DEVS = []
 
 log = Log("Filters")
@@ -83,7 +85,10 @@ async def is_admin(_, client, query):
         user = await client.get_chat_member(query.chat.id, query.from_user.id)
 
         if user.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-            log.getLogger().debug("User is admin")
+            log.getLogger().debug("User is admin or owner")
+            if user.privileges.can_delete_messages and user.privileges.can_restrict_members:
+                log.getLogger().debug("User has privileges to delete messages and restrict members")
+                return True
             return True
     except Exception as e:
         log.getLogger().debug(f"Error in is_admin: {e}")
@@ -135,7 +140,27 @@ async def is_user_trusted(_, client, query):
         log.getLogger().debug(f"Error in is_user_trusted: {e}")
         await client.send_message(query.chat.id, f"Something was happened: {e}")
         return False
+    
+async def is_automod_enabled(_, client, query):
+    automod_handler = AutoModerationHandler(client)
+    try:
+        if query.chat.id == query.from_user.id:
+            log.getLogger().debug("Chat ID is equal to user ID")
+            return False
+        
+        automod_status = await automod_handler._get_automod_status(query.chat.id)
+        if automod_status:
+            log.getLogger().debug(f"Automod is enabled in {query.chat.id} chat")
+            return True
+        else:
+            log.getLogger().debug(f"Automod is disabled in {query.chat.id} chat")
+            return False
+    except Exception as e:
+        log.getLogger().debug(f"Error in is_automod_enabled: {e}")
+        await client.send_message(query.chat.id, f"Something was happened: {e}")
+        return False
 
 is_admin = filters.create(is_admin)
 is_chat_allowed = filters.create(is_chat_allowed)
 is_user_trusted = filters.create(is_user_trusted)
+is_automod_enabled = filters.create(is_automod_enabled)
