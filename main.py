@@ -4,10 +4,10 @@ from pyrogram import idle
 
 from core.client_manager import *
 from core.plugin_loader import PluginLoader
-from logger import Log
+from logger import Log, STANDARD_LOG_LEVEL
 
 log = Log("userbot-moderator")
-log.getLogger().setLevel("DEBUG")
+log.getLogger().setLevel(STANDARD_LOG_LEVEL)
 log.write_logs_to_file()
 
 async def main():
