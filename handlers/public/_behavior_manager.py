@@ -21,13 +21,13 @@ class BehaviorManager:
     async def check_offensive_behavior(self, message):
         """Check if the message contains any offensive behavior."""
         if not message:
-            return False
+            return "", False
 
         # Fetch all banned behaviors from the database
         banned_behaviors_list = await self._load_patterns()
         if not banned_behaviors_list:
             _log.getLogger().debug("No banned behaviors found in the database.")
-            return False
+            return "", False
 
         for behavior in banned_behaviors_list:
             match = re.search(behavior["text"], message, re.IGNORECASE)
@@ -42,16 +42,16 @@ class BehaviorManager:
                 if match.groups():
                     _log.getLogger().debug(f"Matched groups: {match.groups()}")
 
-                return True  # Return True immediately if an exact match is found
+                return "re.search", True  # Return True immediately if an exact match is found
 
         result, score = self.find_best_pattern_match(message, banned_behaviors_list)
         if result:
             _log.getLogger().info(f"Fuzzy match found: {result['text']} with score {score}.")
             _log.getLogger().debug(f"Matched text: '{result['text']}' with score {score} in the message.")
-            return True
+            return "fuzzywuzzy", True
         
         _log.getLogger().debug("No offensive behavior detected.")
-        return False
+        return "", False
 
     def _expand_pattern(self, pattern: str) -> List[str]:
         """Expand the behavior text to include variations."""
