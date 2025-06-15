@@ -26,12 +26,11 @@ class AIManager:
             raise TypeError("Client must be an instance of AsyncOpenAI")
 
         self._system_prompt = """You are an AI chat moderator assistant. Your role is to analyze messages and provide structured moderation decisions.
-        
         You must respond in the following format:
-        ACTION: [none/mute/ban/delete]
-        REASON: [brief explanation in Russian language]
-        DURATION: [time in seconds or 0 for permanent]
-        WARNING: [warning message if needed]
+        ACTION: [none/mute/ban/delete]  
+        REASON: [brief explanation in Russian language]  
+        DURATION: [time in seconds or 0 for permanent]  
+        WARNING: [warning message if needed]  
         CONFIDENCE: [0.0-1.0]
 
         Your role is to:
@@ -39,9 +38,21 @@ class AIManager:
         - Identify potential violations of chat rules
         - Suggest appropriate moderation actions
         - Be firm but fair in moderation decisions
+
+        Context:
+        You are given a list of recent messages from the chat. These messages are ordered chronologically — from oldest to newest. The **last message in the list is the one that triggered the moderation system**. You must consider it as the focal point of the analysis.
+
+        Important behavioral aspects:
+        - Messages may contain sarcasm, irony, or passive aggression.  
+        - Some messages may appear toxic only in isolation but are part of a sarcastic or playful exchange.
+        - You should analyze the tone and dynamics of the conversation, not just individual words.
+        - Recognize patterns that suggest joking versus actual harm.
+
+        The method used to detect this message is provided (e.g., regex or fuzzy string matching), but your analysis should not rely solely on the triggering pattern — evaluate the **entire context** to assess real intent and severity.
+
+        Be accurate, balanced, and provide reasoning that reflects both the words and the implied tone.
         """
         self.messages = [{"role": "system", "content": self._system_prompt}]
-        # self.messages = []
 
     async def analyze_message(self, message: str, model: str = "meta-llama/Llama-3.3-70B-Instruct") -> ModDecision:
         try:
@@ -67,8 +78,45 @@ class AIManager:
 
             response_text = response.choices[0].message.content
             decision = self._parse_response(response_text)
-            print(response_text)
-            print(decision)
+            _log.getLogger().debug(f"Moderation decision: {decision}")
+
+            return decision
+        except Exception as e:
+            _log.getLogger().error(f"Error generating response: {str(e)}")
+            return ModDecision(
+                action=ModAction.NONE,
+                reason="Error processing message: " + str(e),
+                confidence=0.0
+            )
+
+    async def analyze_message_context(self, messages: List, method: str, model: str = "meta-llama/Llama-3.3-70B-Instruct") -> ModDecision:
+        try:
+            if not isinstance(messages, List) or not all(isinstance(m, Dict) for m in self.messages):
+                raise TypeError("messages must be a list of dictionaries")
+            
+            # msgs = [f"{k}: {v}" for k, v in messages.items() if k and v]
+            # print(f"Messages to analyze: {msgs}")
+            
+            if messages:
+                self.messages.append({"role": "user", "content": f"Analyze these messages context: {messages} and make a decision by prompt! Analyzed by {method}"})
+
+            _log.getLogger().debug("Starting to analyse the message...")
+            print(self.messages)
+
+            response = await self._client.chat.completions.create(
+                model=model,
+                messages=self.messages,
+                temperature=0.7,
+                stream=False,
+                max_completion_tokens=200
+            )
+
+            # _log.getLogger().debug(f"Response generated: {response.choices[0].message.content}")
+            if not response or not response.choices or not response.choices[0].message:
+                raise ValueError("Invalid response format from AI model")
+
+            response_text = response.choices[0].message.content
+            decision = self._parse_response(response_text)
             _log.getLogger().debug(f"Moderation decision: {decision}")
 
             return decision
