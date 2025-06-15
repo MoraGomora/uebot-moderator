@@ -118,6 +118,8 @@ class AllowChat:
             chat_type = "supergroup"
         elif getattr(data, "type", None) == ChatType.GROUP:
             chat_type = "group"
+        elif getattr(data, "type", None) == ChatType.CHANNEL:
+            chat_type = "channel"
 
         _log.getLogger().debug(f"Creating data dictionary for allowed chat")
         data_dict = {
