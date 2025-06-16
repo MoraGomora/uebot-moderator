@@ -1,7 +1,7 @@
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
-from handlers.filters import check_access_control, is_admin, is_chat_allowed
+from handlers.filters import check_access_control, is_admin, is_chat_allowed, is_automod_enabled
 from enums import CommandAccessLevel
 
 async def register_handlers(client):
@@ -11,7 +11,7 @@ async def register_handlers(client):
 
     from handlers.public import group_commands
 
-    from handlers.admin.group import access, blocked_users, trusted_users
+    from handlers.admin.group import access, blocked_users, trusted_users, automoderation
     from handlers.public.group import message, user
 
     from .plugin._initializer import _PluginCommandInializer
@@ -21,6 +21,7 @@ async def register_handlers(client):
 
     commands_group = group_commands.GroupCommands(client)
     trusted_user = trusted_users.TrustedUsers(client)
+    automod_handler = automoderation.AutoModerationHandler(client)
 
     # ----------------- Register all handlers -----------------
     command_register._register_handlers(client)
@@ -43,4 +44,6 @@ async def register_handlers(client):
     client.add_handler(MessageHandler(trusted_user.remove_trusted_user, filters.command("remove_trusted", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_chat_allowed & is_admin))
     # client.add_handler(MessageHandler(trusted_users.list_trusted_users, filters.command("list_trusted", prefixes=".") & check_access_control(CommandAccessLevel.PRIVATE) & is_admin & is_chat_allowed))
 
-    client.add_handler(MessageHandler(commands_group.restrict_process, is_chat_allowed & is_admin))
+    client.add_handler(MessageHandler(automod_handler.set_automoderation, filters.command("automod", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_chat_allowed & is_admin))
+
+    client.add_handler(MessageHandler(commands_group.autorestrict_process, is_chat_allowed & is_automod_enabled))
