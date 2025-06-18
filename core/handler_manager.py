@@ -1,7 +1,7 @@
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
 
-from handlers.filters import check_access_control, is_admin, is_chat_allowed, is_automod_enabled
+from handlers.filters import *
 from enums import CommandAccessLevel
 
 async def register_handlers(client):
@@ -44,6 +44,7 @@ async def register_handlers(client):
     client.add_handler(MessageHandler(trusted_user.remove_trusted_user, filters.command("remove_trusted", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_chat_allowed & is_admin))
     # client.add_handler(MessageHandler(trusted_users.list_trusted_users, filters.command("list_trusted", prefixes=".") & check_access_control(CommandAccessLevel.PRIVATE) & is_admin & is_chat_allowed))
 
-    client.add_handler(MessageHandler(automod_handler.set_automoderation, filters.command("automod", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_chat_allowed & is_admin))
+    client.add_handler(MessageHandler(commands_group.restrict_process, filters.command("Modxnn", prefixes="@") & is_chat_allowed))
 
+    client.add_handler(MessageHandler(automod_handler.set_automoderation, filters.command("automod", prefixes=".") & check_access_control(CommandAccessLevel.PUBLIC) & is_chat_allowed & is_admin))
     client.add_handler(MessageHandler(commands_group.autorestrict_process, is_chat_allowed & is_automod_enabled))

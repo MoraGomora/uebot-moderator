@@ -4,7 +4,16 @@ from pyrogram.enums import ChatMemberStatus
 
 from core.ai_manager import AIManager
 from ._actions import ModerationActions
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
+
+from .group.message import MessageContext, MessageActions
+from .group.restrict import RestrictActions
+
+from ._behavior_manager import BehaviorManager
+from ._ad_detector import AdDetector
+
+from utils.messages import format_user_restriction_info
 
 _log = Log("GroupCommands")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)
@@ -18,7 +27,9 @@ class GroupCommands:
         self.client = client
 
         self.ai = AIManager()
-        self.mod_actions = ModerationActions(self.client)
+        self.mod_actions = ModerationActions(client)
+        self.restrict = RestrictActions(client)
+        self.message = MessageActions(client)
 
     async def get_restricted_data(self, _, msg):
         try:
@@ -47,86 +58,90 @@ class GroupCommands:
         except Exception as e:
             await self.client.send_message(msg.chat.id, f"Something was happened: {e}")
 
-# async def restrict_process(client, msg):
-#     reply_msg = getattr(msg, "reply_to_message", None)
-#     is_restricted = await is_user_restricted(client, msg)
-
-#     if reply_msg is None:
-#         await client.send_message(msg.chat.id, "Чтобы команда сработала, необходимо выбрать любое сообщение пользователя, которого вы хотите ограничить")
-#         return
-#     if reply_msg.from_user.id == msg.from_user.id:
-#         await client.send_message(msg.chat.id, "ОГРАНИЧЕНИЕ: Ты не можешь ограничить сам себя.")
-#         return
-    
-#     if not is_restricted:
-#         is_restrict = await restrict(client, msg)
-#         get_user_data, get_restricted_by = await get_restricted_data(client, msg)
-#         message = format_user_restriction_info(get_user_data, msg.from_user, get_restricted_by, None)
-
-#         if is_restrict:
-#             await delete_message(client, msg)
-#             await client.send_message(msg.chat.id, message)
-#         else:
-#             await client.send_message(msg.chat.id, f"Пользователь {get_user_data.first_name} уже ограничен")
-
     async def restrict_process(self, _, msg):
-        """Process the restriction command in a group chat.
+        reply_msg = getattr(msg, "reply_to_message", None)
+        is_restricted = await self.restrict.is_user_restricted(_, msg)
+
+        if reply_msg is None:
+            await self.client.send_message(msg.chat.id, "Чтобы команда сработала, необходимо выбрать любое сообщение пользователя, которого вы хотите ограничить")
+            return
+        if reply_msg.from_user.id == msg.from_user.id:
+            await self.client.send_message(msg.chat.id, "ОГРАНИЧЕНИЕ: Ты не можешь ограничить сам себя.")
+            return
+        
+        if not is_restricted:
+            is_restrict = await self.restrict.restrict(msg.chat.id, reply_msg.from_user.id, None)
+            get_user_data, get_restricted_by = await self.get_restricted_data(_, msg)
+            message = format_user_restriction_info(get_user_data, msg.from_user, get_restricted_by, None)
+
+            if is_restrict:
+                # await self.message.delete_message(msg.chat.id, reply_msg.from_user.id)
+                await self.client.send_message(msg.chat.id, message)
+            else:
+                await self.client.send_message(msg.chat.id, f"Пользователь {get_user_data.first_name} уже ограничен")
+
+    async def autorestrict_process(self, _, msg):
+        """
+        Process the restriction command in a group chat.
         :param _: Unused parameter, kept for compatibility with the handler signature.
         :param msg: The message object containing the command and context.
         """
-
+        behavior_manager = BehaviorManager()
+        ad_detector = AdDetector()
         processing_messages = set()
-        msgs = {}
 
+        analyze_method, is_triggered = await behavior_manager.check_offensive_behavior(msg.text)
+        reason, method, is_ad = ad_detector.detect_ad_message(msg)
+
+        _triggered_by = getattr(msg, "from_user", getattr(msg, "sender_chat", None))
+        if _triggered_by is None:
+            _log.getLogger().error("Message does not have a valid user or sender_chat.")
+            await self.client.send_message(msg.chat.id, "Ошибка: сообщение не содержит информации о пользователе или отправителе.")
+            return
+        
         try:
-            reply_msg = getattr(msg, "reply_to_message", None)
             msg_id = f"{msg.chat.id}_{msg.from_user.id}_{msg.id}"
 
-            if msg_id in processing_messages:
-                await self.client.send_message(msg.chat.id, "Команда уже выполняется. Пожалуйста, подождите.")
-                return
-            if reply_msg is None:
-                await self.client.send_message(msg.chat.id, "Чтобы команда сработала, необходимо выбрать любое сообщение пользователя, которого вы хотите ограничить")
-                return
-            # if reply_msg.from_user.id == msg.from_user.id:
-            #     await self.client.send_message(msg.chat.id, "ОГРАНИЧЕНИЕ: Ты не можешь ограничить сам себя.")
-            #     return
-
-            async for message in self.client.get_chat_history(msg.chat.id, limit=15):
-                msgs += msgs.update({message.from_user.first_name: message.text})
-            print(msgs)
-            await self.ai.analyze_message_context(msgs)
-                # print(f"{message.text = }{message.from_user.first_name = }")
+            if is_ad:
+                await self._moderate(msg, msg_id, processing_messages, method)
+                _log.getLogger().debug(f"Ad Detected: {is_ad = }, {msg.id = }, {msg_id = }, {reason = }, {method = }")
             
-            processing_messages.add(msg_id)
-
-            print(f"Processing restriction for message ID: {msg_id} in chat ID: {msg.chat.id}")
-
-            def handle_ai_decision(task):
-                try:
-                    decision = task.result()
-                    # Создаем новую task для применения решения
-                    asyncio.create_task(self._handle_decision(
-                        decision, 
-                        reply_msg,
-                        msg,
-                        self.mod_actions
-                    ))
-                except Exception as e:
-                    _log.getLogger().error(f"Error in AI decision handler: {e}")
-                finally:
-                    processing_messages.remove(msg_id)
-
-            decision_task = asyncio.create_task(self.ai.analyze_message(msg.text))
-            decision_task.add_done_callback(handle_ai_decision)
-
+            if is_triggered:
+                await self._moderate(msg, msg_id, processing_messages, analyze_method)
+                _log.getLogger().debug(f"Behavior patterns triggered: {is_triggered = }, {msg.id = }, {msg_id = }, {analyze_method = }")
         except Exception as e:
             _log.getLogger().error(f"Something went wrong while processing restriction: {e}")
             await self.client.send_message(msg.chat.id, f"Something was happened: {e}")
             if msg_id in processing_messages:
                 processing_messages.remove(msg_id)
 
-    async def _handle_decision(self, decision, reply_msg, msg, mod_actions):
+    async def _moderate(self, msg, msg_id: str, processing_messages: set, analyze_method: str):
+        if msg_id in processing_messages:
+            await self.client.send_message(msg.chat.id, "Сообщение уже обрабатывается. Пожалуйста, подождите.")
+            return
+
+        context = await self.build_context(msg)
+        processing_messages.add(msg_id)
+
+        print(f"Processing restriction for message ID: {msg_id} in chat ID: {msg.chat.id}")
+
+        def handle_ai_decision(task):
+            try:
+                decision = task.result()
+                asyncio.create_task(self._handle_decision(
+                    decision,
+                    msg,
+                    self.mod_actions
+                ))
+            except Exception as e:
+                _log.getLogger().error(f"Error in AI decision handler: {e}")
+            finally:
+                processing_messages.remove(msg_id)
+
+        decision_task = asyncio.create_task(self.ai.analyze_message_context(context, analyze_method))
+        decision_task.add_done_callback(handle_ai_decision)
+
+    async def _handle_decision(self, decision, msg, mod_actions):
         """Handle the AI decision and apply the appropriate moderation action.
         :param decision: The decision object returned by the AI manager.
         :param reply_msg: The message object to which the command was replied.
@@ -138,7 +153,7 @@ class GroupCommands:
                 _log.getLogger().debug("No decision made by AI.")
                 return
 
-            user_id = reply_msg.from_user.id
+            user_id = msg.from_user.id
             chat_id = msg.chat.id
 
             _log.getLogger().debug(f"Applying moderation decision for user {user_id} in chat {chat_id}: {decision}")
@@ -159,14 +174,35 @@ class GroupCommands:
                     return False
             
                 await mod_actions.apply_decision(
-                    reply_msg.chat.id,
-                    reply_msg.from_user.id,
+                    chat_id,
+                    user_id,
                     decision
                 )
         
         except Exception as e:
             _log.getLogger().error(f"Error applying moderation decision: {e}")
             await self.client.send_message(msg.chat.id, f"Something was happened: {e}")
+
+    async def build_context(self, msg):
+        """Build a message context from a list of messages.
+        :param msgs: List of MessageContext.Message objects.
+        :return: List of dictionaries representing the message context.
+        """
+        context = MessageContext()
+        _triggered_by = getattr(msg, "from_user", getattr(msg, "sender_name", None))
+        msgs = []
+
+        async for message in self.client.get_chat_history(msg.chat.id, limit=20):
+            msgs.append(MessageContext.Message(
+                sender_name=message.from_user.first_name,
+                text=message.text or "",
+                datetime=message.date.strftime("%Y-%m-%d %H:%M:%S"),
+                triggered_by=_triggered_by.first_name if _triggered_by else "Unknown",
+                reply_to=message.reply_to_message.text if message.reply_to_message else None
+            ))
+
+        context_list = context.build_message_context(msgs)
+        return context_list
 
 # async def unrestrict_process(client, msg):
 #     reply_msg = getattr(msg, "reply_to_message", None)

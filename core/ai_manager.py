@@ -2,11 +2,9 @@ from openai import AsyncOpenAI
 from typing import List, Dict
 
 from config import config
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL, MODERATION_PROMPT
 from handlers.public._actions import ModDecision, ModAction
-
-from ._prompt_manager import get_prompt
-from enums import ModerationMode
 
 _log = Log("AIManager")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)
@@ -27,7 +25,7 @@ class AIManager:
         if not isinstance(self._client, AsyncOpenAI):
             raise TypeError("Client must be an instance of AsyncOpenAI")
 
-        self._system_prompt = get_prompt(ModerationMode.TOXICITY)
+        self._system_prompt = MODERATION_PROMPT
         self.messages = [{"role": "system", "content": self._system_prompt}]
 
     async def analyze_message(self, message: str, model: str = "meta-llama/Llama-3.3-70B-Instruct") -> ModDecision:
@@ -130,6 +128,6 @@ class AIManager:
         self._system_prompt += f"\n\nAdditional chat rules:\n{new_rules}"
         _log.getLogger().debug(f"Updating system prompt with new rules: {new_rules}")
 
-    def change_moderation_mode(self, mode: ModerationMode):
-        self._system_prompt = get_prompt(mode)
-        _log.getLogger().debug(f"Change moderation mode to: {mode}")
+    def change_prompt(self, prompt: str):
+        self._system_prompt = prompt
+        _log.getLogger().debug(f"Prompt changed to {prompt}")
