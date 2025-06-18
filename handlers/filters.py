@@ -12,6 +12,8 @@ from handlers.admin.group.automoderation import AutoModerationHandler
 
 DEVS = []
 
+
+
 log = Log("Filters")
 log.getLogger().setLevel(STANDARD_LOG_LEVEL)
 log.write_logs_to_file()
@@ -60,11 +62,9 @@ def check_access_control(access_level: CommandAccessLevel):
                 if query.chat.id == owner_id:
                     return False
                 
-                user = await client.get_chat_member(query.chat.id, owner_id)
-
-                if user is None:
-                    log.getLogger().debug("User is None")
+                if query.chat.id == query.user.id:
                     return False
+                
                 if not query.chat.type in [ChatType.SUPERGROUP, ChatType.GROUP]:
                     log.getLogger().debug("Chat type is not supergroup or group")
                     return False
@@ -91,6 +91,8 @@ async def is_admin(_, client, query):
                 log.getLogger().debug("User has privileges to delete messages and restrict members")
                 return True
             return True
+        
+        return False
     except Exception as e:
         log.getLogger().debug(f"Error in is_admin: {e}")
         await client.send_message(query.chat.id, f"Something was happened: {e}")
@@ -101,13 +103,12 @@ async def is_chat_allowed(_, client, query):
 
     try:
         data = await db.find_data_in_collection_by({"chat_id": query.chat.id})
-        chat = await client.get_chat(query.chat.id)
 
         if not data:
             log.getLogger().debug("Chat is not allowed")
             return False
 
-        if chat.type in [ChatType.SUPERGROUP, ChatType.GROUP]:
+        if query.chat.type in [ChatType.SUPERGROUP, ChatType.GROUP]:
             log.getLogger().debug("Chat type is supergroup or group")
             return True
         

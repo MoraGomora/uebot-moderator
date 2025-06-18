@@ -18,7 +18,10 @@ class RestrictActions:
                 raise TypeError("chat_id and user_id must be integers")
             
             _log.getLogger().debug(f"Restricting user {user_id} in chat {chat_id}")
-            data = await self.client.restrict_chat_member(chat_id, user_id, ChatPermissions(), date)
+            if not date:
+                data = await self.client.restrict_chat_member(chat_id, user_id, ChatPermissions())
+            else:
+                data = await self.client.restrict_chat_member(chat_id, user_id, ChatPermissions(), date)
 
             if not data:
                 _log.getLogger().error(f"Failed to restrict user {user_id} in chat {chat_id}")
@@ -31,7 +34,7 @@ class RestrictActions:
             _log.getLogger().error(f"Something was happened: {e}")
             await self.client.send_message(chat_id, f"Something was happened: {e}")
 
-    async def unrestrict(client, msg):
+    async def unrestrict(self, _, msg):
         try:
             reply_msg = getattr(msg, "reply_to_message", None)
 
@@ -39,7 +42,7 @@ class RestrictActions:
                 return None
             
             _log.getLogger().debug(f"Unrestricting user {reply_msg.from_user.id} in chat {msg.chat.id}")
-            data = await client.restrict_chat_member(msg.chat.id, reply_msg.from_user.id, ChatPermissions(
+            data = await self.client.restrict_chat_member(msg.chat.id, reply_msg.from_user.id, ChatPermissions(
                 can_send_messages=True,
                 can_send_media_messages=True,
                 can_send_other_messages=True,
@@ -58,9 +61,9 @@ class RestrictActions:
             return True
         except Exception as e:
             _log.getLogger().error(f"Something was happened: {e}")
-            await client.send_message(msg.chat.id, f"Something was happened: {e}")
+            await self.client.send_message(msg.chat.id, f"Something was happened: {e}")
 
-    async def is_user_restricted(client, msg) -> bool:
+    async def is_user_restricted(self, _, msg) -> bool:
         try:
             reply_msg = getattr(msg, "reply_to_message", None)
             if reply_msg is None:
@@ -68,7 +71,7 @@ class RestrictActions:
             
             _log.getLogger().debug(f"Checking if user {reply_msg.from_user.id} is restricted in chat {msg.chat.id}")
 
-            user = await client.get_chat_member(msg.chat.id, reply_msg.from_user.id)
+            user = await self.client.get_chat_member(msg.chat.id, reply_msg.from_user.id)
 
             if user is None:
                 return None
@@ -78,4 +81,4 @@ class RestrictActions:
             return True if user.status == ChatMemberStatus.RESTRICTED else False
         except Exception as e:
             _log.getLogger().error(f"Something was happened: {e}")
-            await client.send_message(msg.chat.id, f"Something was happened: {e}")
+            await self.client.send_message(msg.chat.id, f"Something was happened: {e}")
