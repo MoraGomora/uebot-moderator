@@ -5,7 +5,8 @@ from bson.objectid import ObjectId
 
 from config.config import get_mongodb_uri
 
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("DBManager")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)

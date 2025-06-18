@@ -4,7 +4,8 @@ from pyrogram import idle
 
 from core.client_manager import *
 from core.plugin_loader import PluginLoader
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 log = Log("userbot-moderator")
 log.getLogger().setLevel(STANDARD_LOG_LEVEL)
