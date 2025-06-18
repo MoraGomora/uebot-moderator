@@ -1,7 +1,7 @@
 from pyrogram.errors import BadRequest
-from pyrogram.enums import ChatMemberStatus
 
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("BanActions")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)

@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from pyrogram import Client
 
 from .group import restrict, ban, message
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("ModerationActions")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)

@@ -2,8 +2,6 @@ import logging
 import datetime
 import os
 
-STANDARD_LOG_LEVEL = logging.DEBUG
-
 class Log():
     def __init__(self, name: str | None = "userbot-moderator", level = logging.DEBUG):
         self._log_dir = "logs"

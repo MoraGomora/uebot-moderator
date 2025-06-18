@@ -1,7 +1,8 @@
 from pyrogram.types import ChatPermissions
 from pyrogram.enums import ChatMemberStatus
 
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("Restrict")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)

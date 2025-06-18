@@ -4,7 +4,8 @@ from typing import List, Dict, Tuple
 from fuzzywuzzy import fuzz
 
 from core.db_manager import DBManager
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("BehaviorManager")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)

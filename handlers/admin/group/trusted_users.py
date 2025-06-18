@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from core.db_manager import DBManager
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("TrustedUsers")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)

@@ -3,7 +3,8 @@ from typing import Optional, List
 
 from utils.messages import format_message_info
 
-from logger import Log, STANDARD_LOG_LEVEL
+from logger import Log
+from constants import STANDARD_LOG_LEVEL
 
 _log = Log("MessageData")
 _log.getLogger().setLevel(STANDARD_LOG_LEVEL)
