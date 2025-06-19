@@ -1,3 +1,7 @@
+import asyncio
+from typing import Dict, Tuple
+from time import time
+
 from pyrogram import filters
 from pyrogram.enums import ChatType, ChatMemberStatus
 
@@ -12,12 +16,109 @@ from handlers.admin.group.automoderation import AutoModerationHandler
 
 DEVS = []
 
-
-
 log = Log("Filters")
 log.getLogger().setLevel(STANDARD_LOG_LEVEL)
 log.write_logs_to_file()
 
+# ----------------- Admin Control and Caching classes | BEGIN -----------------
+class AsyncAdminCache:
+
+    def __init__(self, ttl: int = 300):
+        self._cache: Dict[Tuple[int, int], Tuple[bool, float]] = {}
+        self._ttl = ttl
+        self._lock = asyncio.Lock()
+        self._cleanup_task = None
+        self._is_running = False
+
+    async def get(self, chat_id: int, user_id: int) -> bool | None:
+        async with self._lock:
+            key = (chat_id, user_id)
+            if key in self._cache:
+                is_admin, timestamp = self._cache[key]
+                if time() - timestamp < self._ttl:
+                    return is_admin
+                del self._cache[key]
+            return None
+        
+    async def set(self, chat_id: int, user_id: int, is_admin: bool):
+        async with self._lock:
+            self._cache[(chat_id, user_id)] = (is_admin, time())
+
+            if len(self._cache) == 1 and not self._is_running:
+                self._start_cleanup()
+
+    async def invalidate(self, chat_id: int, user_id: int):
+        async with self._lock:
+            key = (chat_id, user_id)
+            if key in self._cache:
+                del self._cache[key]
+
+    async def _cleanup_loop(self):
+        log.getLogger().debug("_cleanup_loop is running...")
+
+        while self._is_running and self._cache:
+            try:
+                await asyncio.sleep(90)
+                self.cleanup()
+
+                if not self._cache:
+                    self._is_running = False
+                    self._cleanup_task = None
+                    log.getLogger().debug("_cleanup_loop is stopped, because cache is empty")
+                    break
+
+            except Exception as e:
+                log.getLogger().error(f"Error in _cleanup_loop: {e}")
+                await asyncio.sleep(5)
+
+    def _start_cleanup(self):
+        if not self._start_cleanup:
+            self._start_cleanup = asyncio.create_task(self._cleanup_loop())
+
+            if self._start_cleanup:
+                self._is_running = True
+                log.getLogger().debug("_start_cleanup is running...")
+
+    def cleanup(self):
+        current_time = time()
+        expired = [
+            key for key, (_, timestamp) in self._cache.items()
+            if current_time - timestamp >= self._ttl
+        ]
+        for key in expired:
+            del self._cache[key]
+            log.getLogger().debug(f"Remove expired entry: {key}")
+
+class AdminControl:
+
+    def __init__(self):
+        self.admin_cache = AsyncAdminCache(250)
+
+    async def is_admin(self, client, query):
+        cached_result = await self.admin_cache.get(query.chat.id, query.from_user.id)
+        if cached_result is not None:
+            print(f"This is_admin value is from cache: {cached_result}")
+            return cached_result
+
+        try:
+            if query.chat.id == query.from_user.id:
+                log.getLogger().debug("Chat ID is equal to user ID")
+                return False
+            
+            user = await client.get_chat_member(query.chat.id, query.from_user.id)
+            is_admin = user.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
+            print(f"This is_admin value is new: {is_admin}")
+
+            await self.admin_cache.set(query.chat.id, query.from_user.id, is_admin)
+            
+            return is_admin
+        except Exception as e:
+            log.getLogger().debug(f"Error in is_admin: {e}")
+            await client.send_message(query.chat.id, f"Something was happened: {e}")
+            return False
+# ------------------ Admin Control and Caching classes | EBD ------------------
+
+# ----------------- Other filters -----------------
 def check_access_control(access_level: CommandAccessLevel):
     async def func(_, client, query):
         owner_id = int(get_owner_id())
@@ -62,7 +163,7 @@ def check_access_control(access_level: CommandAccessLevel):
                 if query.chat.id == owner_id:
                     return False
                 
-                if query.chat.id == query.user.id:
+                if query.chat.id == query.from_user.id:
                     return False
                 
                 if not query.chat.type in [ChatType.SUPERGROUP, ChatType.GROUP]:
@@ -76,27 +177,6 @@ def check_access_control(access_level: CommandAccessLevel):
                 return False
 
     return filters.create(func)
-
-async def is_admin(_, client, query):
-    try:
-        if query.chat.id == query.from_user.id:
-            log.getLogger().debug("Chat ID is equal to user ID")
-            return False
-        
-        user = await client.get_chat_member(query.chat.id, query.from_user.id)
-
-        if user.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-            log.getLogger().debug("User is admin or owner")
-            if user.privileges.can_delete_messages and user.privileges.can_restrict_members:
-                log.getLogger().debug("User has privileges to delete messages and restrict members")
-                return True
-            return True
-        
-        return False
-    except Exception as e:
-        log.getLogger().debug(f"Error in is_admin: {e}")
-        await client.send_message(query.chat.id, f"Something was happened: {e}")
-        return False
 
 async def is_chat_allowed(_, client, query):
     db = DBManager("moderator-db", "allowed-chats")
@@ -162,7 +242,9 @@ async def is_automod_enabled(_, client, query):
         await client.send_message(query.chat.id, f"Something was happened: {e}")
         return False
 
-is_admin = filters.create(is_admin)
+control = AdminControl()
+
+is_admin = filters.create(control.is_admin)
 is_chat_allowed = filters.create(is_chat_allowed)
 is_user_trusted = filters.create(is_user_trusted)
 is_automod_enabled = filters.create(is_automod_enabled)
