@@ -1,5 +1,3 @@
-import asyncio
-
 from pyrogram import Client
 
 from utils.path_manager import get_session_path

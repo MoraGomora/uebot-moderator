@@ -1,9 +1,8 @@
-from time import sleep
 import asyncio
 
 from pyrogram.errors import FloodWait
 
-LENGTH_COUNT = 20
+LENGTH_COUNT = 100
 
 async def type(_, msg) -> str:
     orig_text, text, tbp = "", "", ""
@@ -12,10 +11,10 @@ async def type(_, msg) -> str:
     try:
         if isinstance(msg.text, str):
             orig_text = msg.text.split(".type ", maxsplit=1)[1]
-            checker = orig_text.split()
+            # checker = orig_text.split()
             text = orig_text
 
-        if len(checker) <= LENGTH_COUNT:
+        if len(text) <= LENGTH_COUNT:
             while(tbp != orig_text):
                 try:
                     await msg.edit(tbp + typing_symbol)
@@ -27,6 +26,6 @@ async def type(_, msg) -> str:
                 except FloodWait as e:
                     await asyncio.sleep(e.x)
         else:
-            await msg.edit("The message should not be longer than 20 words")
+            await msg.edit("The message should not be longer than 100 symbols")
     except IndexError:
         await msg.edit("Please enter text as an argument")
